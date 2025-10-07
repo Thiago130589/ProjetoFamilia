@@ -5,8 +5,9 @@
  */
 
 // As variáveis globais 'auth' e 'db' são definidas em firebase-init.js.
-const firebaseAuth = typeof auth !== 'undefined' ? auth : null;
-const firestoreDb = typeof db !== 'undefined' ? db : null;
+// **CORREÇÃO: Usar as variáveis globais diretamente, se elas existirem.**
+const firebaseAuth = auth;
+const firestoreDb = db;
 
 const loginForm = document.getElementById('login-form');
 const usernameInput = document.getElementById('login-username');
@@ -34,7 +35,6 @@ function mapUsernameToEmail(username) {
         return username.toLowerCase().trim();
     }
     // E-mail fictício usado no cadastro do Firebase Auth para usuários comuns
-    // O domínio 'familiadefault.com' é o padrão para usuários não-admin
     return `${username.toLowerCase().trim()}@familiadefault.com`;
 }
 
@@ -48,6 +48,7 @@ async function handleLogin(e) {
 
     if (!firebaseAuth || !firestoreDb) {
         showMessage('Erro crítico: Firebase não inicializado.', 'error');
+        console.error("Firebase Auth ou Firestore não estão definidos. Verifique firebase-init.js");
         return;
     }
 
@@ -67,16 +68,13 @@ async function handleLogin(e) {
 
     try {
         // 1. Autenticação
-        // Se o email é 'thiagoferreira2flores@gmail.com', ele usa o Auth com o email real.
-        // Se o email é 'usuariocomum', ele usa 'usuariocomum@familiadefault.com' no Auth.
         const userCredential = await firebaseAuth.signInWithEmailAndPassword(emailToLogin, password);
         const firebaseUser = userCredential.user;
 
         // O ID do documento é SEMPRE o email completo usado no Auth.
         const documentId = firebaseUser.email; 
         
-        // 2. Busca dados do Firestore - CRÍTICO: USA O documentId CORRETO
-        // O Firestore está tentando ler o documento users/thiagoferreira2flores@gmail.com
+        // 2. Busca dados do Firestore
         const userDoc = await firestoreDb.collection('users').doc(documentId).get();
 
         if (!userDoc.exists) {
@@ -90,8 +88,8 @@ async function handleLogin(e) {
         // 3. Salva a sessão no LocalStorage
         const userSession = {
             uid: firebaseUser.uid,
-            // Usa o username original se for email, ou o apelido se for default
-            username: username.includes('@') ? username : username, 
+            // Usa o username original
+            username: username, 
             nome: userData.nome || 'Usuário',
             isAdmin: userData.isAdmin || false,
             saldo: userData.saldo || 0,
@@ -108,12 +106,14 @@ async function handleLogin(e) {
             errorMessage = 'Apelido ou Senha incorreta.';
         } else if (error.code === 'auth/network-request-failed') {
             errorMessage = 'Erro de conexão.';
-        } else if (error.code === 'permission-denied' || error.code === 'unavailable') {
-             // Tratamento adicional para erros de regra/conexão
+        } else if (error.code === 'permission-denied') {
              errorMessage = 'Erro de permissão no banco de dados. Verifique as Regras do Firestore.';
+        } else if (error.code === 'auth/internal-error' && error.message.includes('INVALID_LOGIN_CREDENTIALS')) {
+            // Este é um erro comum do 400 Bad Request que aparece nas suas imagens.
+            errorMessage = 'Erro no login. Verifique o Apelido/Usuário e Senha.';
         }
-
-        console.error("Erro de Login:", error);
+        
+        console.error("Erro de Login Detalhado:", error);
         showMessage(errorMessage, 'error');
         loginButton.disabled = false;
         loginButton.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar';

@@ -6,12 +6,13 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     // Acessa as variáveis globais 'db' (Firestore) e 'auth' (Firebase Auth)
-    const firebaseAuth = typeof auth !== 'undefined' ? auth : null; 
-    const firestoreDb = typeof db !== 'undefined' ? db : null; 
+    // **CORREÇÃO: Usar as variáveis globais diretamente, se elas existirem.**
+    const firebaseAuth = auth;
+    const firestoreDb = db;
     const USERS_COLLECTION = 'users';
 
     if (!firestoreDb || !firebaseAuth) { 
-        console.error("ERRO CRÍTICO: Firebase (Firestore ou Auth) não está definido.");
+        console.error("ERRO CRÍTICO: Firebase (Firestore ou Auth) não está definido. Verifique firebase-init.js");
         return;
     }
 
@@ -28,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     /**
      * Função auxiliar para converter o arquivo de foto em Base64
-     * (Simplificamos para não precisar de Storage neste momento)
      */
     function convertFileToBase64(file) {
         return new Promise((resolve, reject) => {
@@ -86,17 +86,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const emailToRegister = mapUsernameToEmail(username);
 
+        // Desabilita o botão
+        const registerButton = registerForm.querySelector('button[type="submit"]');
+        registerButton.disabled = true;
+        registerButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+        
         try {
-            // Desabilita o botão
-            const registerButton = registerForm.querySelector('button[type="submit"]');
-            registerButton.disabled = true;
-            registerButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
-
-            // 3. VERIFICAÇÃO DE DUPLICIDADE (Firestore)
+            // 3. VERIFICAÇÃO DE DUPLICIDADE (Firestore) - Requer a regra de leitura para usuários anônimos
             const userDocCheck = await firestoreDb.collection(USERS_COLLECTION).doc(emailToRegister).get();
 
             if (userDocCheck.exists) {
-                throw new Error("auth/email-already-in-use");
+                // Lançar um erro com o código do Firebase para que o catch trate
+                throw { code: "auth/email-already-in-use" };
             }
 
             // 4. PREPARAÇÃO DA FOTO
@@ -120,12 +121,15 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             await firestoreDb.collection(USERS_COLLECTION).doc(emailToRegister).set(newUserDoc);
-
+            
             // 7. SUCCESSO
             messageEl.textContent = 'Cadastro realizado com sucesso! Redirecionando para o login...';
             messageEl.classList.remove('hidden-start');
             messageEl.classList.remove('error-message');
-            messageEl.style.color = 'var(--success-color, green)'; 
+            messageEl.classList.add('success-message'); 
+
+            // SignOut após o cadastro para garantir que a próxima tela seja o login
+            await firebaseAuth.signOut();
 
             setTimeout(() => {
                 window.location.href = 'login.html'; 
@@ -139,12 +143,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let errorMessage = `Erro ao cadastrar.`;
             
-            if (error.message.includes('A imagem é muito grande')) {
+            // Verifica o formato do erro (pode ser um objeto de erro do Firebase ou uma string de exceção)
+            const errorCode = error.code || (error.message && error.message.includes('A imagem é muito grande') ? 'image-too-large' : 'unknown');
+
+            if (errorCode === 'image-too-large') {
                  errorMessage = error.message;
-            } else if (error.code === 'auth/email-already-in-use') {
-                errorMessage = "Este apelido já está em uso.";
-            } else if (error.code === 'auth/weak-password') {
+            } else if (errorCode === 'auth/email-already-in-use') {
+                 errorMessage = "Este apelido já está em uso.";
+            } else if (errorCode === 'auth/weak-password') {
                  errorMessage = "A senha deve ter pelo menos 6 caracteres.";
+            } else if (errorCode === 'permission-denied' || errorCode === 'unavailable') {
+                errorMessage = "Erro de permissão ou conexão com o banco de dados. Verifique as Regras do Firestore e sua conexão.";
             } else {
                  console.error("Erro detalhado:", error);
             }
@@ -152,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messageEl.textContent = errorMessage;
             messageEl.classList.add('error-message');
             messageEl.classList.remove('hidden-start');
+            messageEl.classList.remove('success-message');
         }
     }
 });
