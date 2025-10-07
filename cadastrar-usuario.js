@@ -1,18 +1,21 @@
+// cadastrar-usuario.js
+
+// Importa os serviços do Firebase inicializados no firebase-init.js
+import { auth, db } from "./firebase-init.js"; 
+
 /**
  * Arquivo: cadastrar-usuario.js
- * Descrição: Lógica de criação de novos usuários (Auth e Firestore).
- * Depende de: firebase-init.js (para 'auth' e 'db')
+ * Descrição: Lógica de criação de novos usuários (Auth e Firestore, Firebase v9/Módulos).
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Acessa as variáveis globais 'db' (Firestore) e 'auth' (Firebase Auth)
-    // **CORREÇÃO: Usar as variáveis globais diretamente, se elas existirem.**
+    
     const firebaseAuth = auth;
     const firestoreDb = db;
     const USERS_COLLECTION = 'users';
 
     if (!firestoreDb || !firebaseAuth) { 
-        console.error("ERRO CRÍTICO: Firebase (Firestore ou Auth) não está definido. Verifique firebase-init.js");
+        console.error("ERRO CRÍTICO: Firebase (Firestore ou Auth) não está definido.");
         return;
     }
 
@@ -37,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const reader = new FileReader();
-            // Limita o tamanho do arquivo para evitar problemas de desempenho no Base64
             if (file.size > 512000) { // 500KB
                  reject(new Error("A imagem é muito grande. Tamanho máximo: 500KB."));
                  return;
@@ -93,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             // 3. VERIFICAÇÃO DE DUPLICIDADE (Firestore) - Requer a regra de leitura para usuários anônimos
+            // Se esta linha falhar, o problema é 100% a Regra de Segurança!
             const userDocCheck = await firestoreDb.collection(USERS_COLLECTION).doc(emailToRegister).get();
 
             if (userDocCheck.exists) {
@@ -110,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const userCredential = await firebaseAuth.createUserWithEmailAndPassword(emailToRegister, password);
             const firebaseUser = userCredential.user;
             
-            // 6. CRIAÇÃO DO DOCUMENTO NO FIRESTORE
+            // 6. CRIAÇÃO DO DOCUMENTO NO FIRESTORE (Requer a regra de criação para o próprio usuário)
             const newUserDoc = {
                 uid: firebaseUser.uid,
                 nome: nome,
@@ -128,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messageEl.classList.remove('error-message');
             messageEl.classList.add('success-message'); 
 
-            // SignOut após o cadastro para garantir que a próxima tela seja o login
+            // Desloga o usuário recém-criado para levá-lo à tela de login
             await firebaseAuth.signOut();
 
             setTimeout(() => {
@@ -143,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let errorMessage = `Erro ao cadastrar.`;
             
-            // Verifica o formato do erro (pode ser um objeto de erro do Firebase ou uma string de exceção)
             const errorCode = error.code || (error.message && error.message.includes('A imagem é muito grande') ? 'image-too-large' : 'unknown');
 
             if (errorCode === 'image-too-large') {
