@@ -1,15 +1,15 @@
 // firebase-init.js
 
+// Importa as funções específicas. O navegador SABE onde buscar
+// porque as URLs do CDN estão no HTML!
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// Importa o serviço de autenticação
+import { getAnalytics } from "firebase/analytics"; 
 import { getAuth } from "firebase/auth"; 
-// Importa o serviço do Firestore
 import { getFirestore } from "firebase/firestore"; 
 
 // Sua configuração do aplicativo Web do Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyD2ZVd8TyXZN792UjTqaFGw9OPcEp7JPzw", // CHAVE API CORRETA
+  apiKey: "AIzaSyD2ZVd8TyXZN792UjTqaFGw9OPcEp7JPzw",
   authDomain: "projetofamilia-f0190.firebaseapp.com",
   projectId: "projetofamilia-f0190",
   storageBucket: "projetofamilia-f0190.firebasestorage.app",
@@ -23,6 +23,6 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
 // 2. Inicializa os serviços de Auth e Firestore
-// Estas variáveis precisam ser EXPORTADAS para serem usadas em login.js e cadastrar-usuario.js
+// EXPORTA as variáveis para serem usadas em login.js e cadastrar-usuario.js
 export const auth = getAuth(app); 
 export const db = getFirestore(app);

@@ -2,6 +2,10 @@
 
 // Importa os serviços do Firebase inicializados no firebase-init.js
 import { auth, db } from "./firebase-init.js"; 
+// Importa os métodos de autenticação
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+// Importa os métodos do Firestore
+import { doc, getDoc, setDoc, collection } from "firebase/firestore";
 
 /**
  * Arquivo: cadastrar-usuario.js
@@ -95,10 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             // 3. VERIFICAÇÃO DE DUPLICIDADE (Firestore) - Requer a regra de leitura para usuários anônimos
-            // Se esta linha falhar, o problema é 100% a Regra de Segurança!
-            const userDocCheck = await firestoreDb.collection(USERS_COLLECTION).doc(emailToRegister).get();
+            const userDocRef = doc(collection(firestoreDb, USERS_COLLECTION), emailToRegister);
+            const userDocCheck = await getDoc(userDocRef);
 
-            if (userDocCheck.exists) {
+            if (userDocCheck.exists()) {
                 // Lançar um erro com o código do Firebase para que o catch trate
                 throw { code: "auth/email-already-in-use" };
             }
@@ -110,7 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // 5. CRIAÇÃO DE CONTA NO FIREBASE AUTH
-            const userCredential = await firebaseAuth.createUserWithEmailAndPassword(emailToRegister, password);
+            const userCredential = await createUserWithEmailAndPassword(firebaseAuth, emailToRegister, password);
             const firebaseUser = userCredential.user;
             
             // 6. CRIAÇÃO DO DOCUMENTO NO FIRESTORE (Requer a regra de criação para o próprio usuário)
@@ -123,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 isAdmin: false, 
             };
 
-            await firestoreDb.collection(USERS_COLLECTION).doc(emailToRegister).set(newUserDoc);
+            await setDoc(doc(collection(firestoreDb, USERS_COLLECTION), emailToRegister), newUserDoc);
             
             // 7. SUCCESSO
             messageEl.textContent = 'Cadastro realizado com sucesso! Redirecionando para o login...';
@@ -132,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
             messageEl.classList.add('success-message'); 
 
             // Desloga o usuário recém-criado para levá-lo à tela de login
-            await firebaseAuth.signOut();
+            await signOut(firebaseAuth);
 
             setTimeout(() => {
                 window.location.href = 'login.html'; 

@@ -2,6 +2,10 @@
 
 // Importa os serviços do Firebase inicializados no firebase-init.js
 import { auth, db } from "./firebase-init.js"; 
+// Importa o método de autenticação
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+// Importa o método do Firestore
+import { doc, getDoc, collection } from "firebase/firestore";
 
 /**
  * Arquivo: login.js
@@ -10,6 +14,7 @@ import { auth, db } from "./firebase-init.js";
 
 const firebaseAuth = auth;
 const firestoreDb = db;
+const USERS_COLLECTION = 'users'; // Garante que a coleção é a correta
 
 const loginForm = document.getElementById('login-form');
 const usernameInput = document.getElementById('login-username');
@@ -18,7 +23,6 @@ const loginMessage = document.getElementById('login-message');
 
 function showMessage(message, type = 'error') {
     loginMessage.textContent = message;
-    // Assume que você tem as classes .message-feedback, .error-message, .success-message no style.css
     loginMessage.className = `message-feedback ${type}-message`; 
     loginMessage.classList.remove('hidden-start');
 }
@@ -68,18 +72,19 @@ async function handleLogin(e) {
 
 
     try {
-        // 1. Autenticação (A função é importada no firebase-init, mas o método está na instância auth)
-        const userCredential = await firebaseAuth.signInWithEmailAndPassword(emailToLogin, password);
+        // 1. Autenticação (Usando a função signInWithEmailAndPassword importada)
+        const userCredential = await signInWithEmailAndPassword(firebaseAuth, emailToLogin, password);
         const firebaseUser = userCredential.user;
 
         const documentId = firebaseUser.email; 
         
-        // 2. Busca dados do Firestore (Requer permissão de leitura)
-        const userDoc = await firestoreDb.collection('users').doc(documentId).get();
+        // 2. Busca dados do Firestore (Usando a função doc e getDoc importada)
+        const userDocRef = doc(collection(firestoreDb, USERS_COLLECTION), documentId);
+        const userDoc = await getDoc(userDocRef);
 
-        if (!userDoc.exists) {
+        if (!userDoc.exists()) {
             // Se a leitura falhou, desloga o usuário por segurança.
-            await firebaseAuth.signOut();
+            await signOut(firebaseAuth);
             showMessage('Perfil não encontrado no banco de dados. Contate o administrador.', 'error');
             return;
         }
@@ -106,7 +111,7 @@ async function handleLogin(e) {
         if (error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
             errorMessage = 'Apelido ou Senha incorreta.';
         } else if (error.code === 'auth/network-request-failed' || error.code === 'unavailable') {
-            errorMessage = 'Erro de conexão ou de acesso ao Firebase (código 1).';
+            errorMessage = 'Erro de conexão ou de acesso ao Firebase.';
         } else if (error.code === 'permission-denied') {
              errorMessage = 'Erro de permissão no banco de dados. Verifique as Regras do Firestore.';
         }
