@@ -1,0 +1,110 @@
+/*
+ * Arquivo: style.css
+ * Descrição: Padrão de estilo solicitado pelo usuário.
+ */
+
+/* 1. VARIÁVEIS DE COR E ESTILO */
+:root {
+    --bg-color: #2196F3; /* Azul primário (cor de fundo) */
+    --form-bg-color: #f0f0f0; /* Cinza claro para formulários */
+    --text-color: #333; /* Cor escura para o texto */
+    --border-color: #ccc;
+    --success-color: #4CAF50;
+    --error-color: #F44336;
+}
+
+/* 2. ESTILO GLOBAL */
+body {
+    /* Cor de fundo azul solicitada */
+    background-color: var(--bg-color); 
+    font-family: Arial, sans-serif;
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+h1 {
+    font-weight: bold; /* Letras em negrito */
+    color: #0d47a1; /* Azul escuro */
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+p {
+    font-weight: normal; 
+}
+
+/* 3. ESTILO DO CONTAINER (Centro da tela) */
+/* Esta é a div cinza que contém os formulários e o conteúdo principal */
+.center-box {
+    background-color: var(--form-bg-color); /* Cinza claro solicitado */
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 400px; /* Largura máxima padrão para formulários */
+    box-sizing: border-box;
+}
+
+/* 4. ESTILO DE INPUTS E BOTÕES */
+.input-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold; /* Letras em negrito para labels */
+}
+
+input[type="text"],
+input[type="password"],
+input[type="file"],
+input[type="email"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    box-sizing: border-box; /* Garante que padding e border não aumentem a largura total */
+    font-weight: normal;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #1976D2; /* Azul um pouco mais escuro para o botão */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold; /* Letras em negrito */
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+button:hover {
+    background-color: #1565C0;
+}
+
+/* 5. MENSAGENS DE FEEDBACK */
+.message-feedback {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.error-message {
+    background-color: #FFCDD2; /* Vermelho claro */
+    color: var(--error-color); /* Vermelho escuro */
+}
+
+/* Classe utilitária para esconder elementos no início */
+.hidden-start {
+    display: none;
+}
